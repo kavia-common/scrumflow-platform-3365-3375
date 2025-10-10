@@ -21,17 +21,20 @@ class JiraService:
     """
 
     def __init__(self) -> None:
+        """Initialize JiraService by loading Jira MCP configuration from environment."""
         self.cfg = get_jira_config()
 
     def _is_enabled(self) -> bool:
+        """Return True if Jira MCP integration is fully enabled/configured."""
         return self.cfg.enabled
 
     def _run_tool(self, tool_name: str, args: dict[str, Any]) -> Optional[dict[str, Any]]:
         """
         Execute the MCP client with a JSON payload containing the tool name and args.
 
-        Expected convention for the MCP client: read JSON on stdin and output JSON on stdout
-        containing at minimum a 'success' boolean and optionally 'data' or 'error'.
+        Expected MCP client convention:
+        - Read a single JSON object on stdin: {"tool": "<name>", "args": {...}, "context": {...}}
+        - Write a single JSON object on stdout: {"success": true/false, "data": {...}? , "error": "..."}.
         """
         if not self._is_enabled():
             logger.info("Jira MCP disabled: missing configuration; tool=%s skipped", tool_name)
@@ -54,8 +57,7 @@ class JiraService:
                 logger.warning("MCP client command not configured; skipping Jira call: %s", tool_name)
                 return None
 
-            # Use shell tokenization for safety, but we run shell=True only when necessary.
-            # Here we pass string to shell to allow complex commands, documented by env.
+            # Use shell to support multi-word commands (e.g., "mcp-jira --stdio")
             completed = subprocess.run(
                 cmd,  # type: ignore[arg-type]
                 input=json.dumps(payload).encode("utf-8"),
@@ -66,8 +68,11 @@ class JiraService:
             )
 
             if completed.returncode != 0:
-                logger.error("MCP client returned non-zero exit status: %s, stderr=%s",
-                             completed.returncode, completed.stderr.decode("utf-8", errors="ignore"))
+                logger.error(
+                    "MCP client returned non-zero exit status: %s, stderr=%s",
+                    completed.returncode,
+                    completed.stderr.decode("utf-8", errors="ignore"),
+                )
                 return None
 
             raw = completed.stdout.decode("utf-8", errors="ignore").strip()
@@ -90,7 +95,18 @@ class JiraService:
     # PUBLIC_INTERFACE
     def create_issue(self, *, project_key: str, summary: str, description: str,
                      issue_type: str = "Task") -> Optional[str]:
-        """Create a Jira issue and return its key (e.g., PROJ-123) or None on failure."""
+        """
+        Create a Jira issue via MCP.
+
+        Args:
+            project_key (str): Jira project key (e.g., "PROJ").
+            summary (str): Issue summary/title.
+            description (str): Issue description.
+            issue_type (str): Jira issue type (default "Task").
+
+        Returns:
+            Optional[str]: Issue key (e.g., "PROJ-123") if successful, otherwise None.
+        """
         resp = self._run_tool(
             "createIssue",
             {
@@ -109,7 +125,16 @@ class JiraService:
 
     # PUBLIC_INTERFACE
     def transition_issue(self, *, issue_key: str, status_name: str) -> bool:
-        """Transition a Jira issue to the given workflow status name. Returns True if success."""
+        """
+        Transition a Jira issue to a given workflow status.
+
+        Args:
+            issue_key (str): Issue key to transition (e.g., "PROJ-123").
+            status_name (str): Target workflow status name (e.g., "In Progress").
+
+        Returns:
+            bool: True if transition succeeded, False otherwise.
+        """
         resp = self._run_tool(
             "transitionIssue",
             {
@@ -126,7 +151,16 @@ class JiraService:
 
     # PUBLIC_INTERFACE
     def add_comment(self, *, issue_key: str, comment: str) -> bool:
-        """Add a comment to a Jira issue. Returns True on success."""
+        """
+        Add a comment to a Jira issue via MCP.
+
+        Args:
+            issue_key (str): Jira issue key (e.g., "PROJ-123").
+            comment (str): Comment text.
+
+        Returns:
+            bool: True if comment added successfully, False otherwise.
+        """
         resp = self._run_tool(
             "addComment",
             {
@@ -153,5 +187,13 @@ STATUS_TO_JIRA = {
 
 # PUBLIC_INTERFACE
 def map_task_status_to_jira(status: str) -> str:
-    """Map internal TaskStatus string to a Jira workflow status name."""
+    """
+    Map an internal TaskStatus string (e.g., 'in_progress') to a Jira workflow status name.
+
+    Args:
+        status (str): Internal status string.
+
+    Returns:
+        str: Jira status label (e.g., "In Progress"). Defaults to title-cased input if unknown.
+    """
     return STATUS_TO_JIRA.get(status, status.title())
