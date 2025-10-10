@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List
 
 from sqlmodel import Field, SQLModel
 from sqlalchemy.orm import relationship as sa_relationship
 
-# Note: TYPE_CHECKING block intentionally omitted as we avoid explicit type annotations
-# on relationship attributes to prevent SQLAlchemy from attempting to resolve generics like list['Task'].
+# Use simple string-based forward refs in type annotations for Pydantic only
 
 
 class TaskStatus(str, enum.Enum):
@@ -35,10 +34,16 @@ class TeamMember(TeamMemberBase, table=True):
     __tablename__ = "teammember"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Avoid generic-string annotations like list["Task"] which SQLAlchemy attempts to resolve as a class name.
-    # Use an untyped attribute assignment with sqlalchemy.orm.relationship to let SA configure properly.
-    # Note: keep attribute for runtime only; type checkers can infer via TYPE_CHECKING alias _Task.
-    tasks = sa_relationship("Task", back_populates="assignee")
+    # Annotated for Pydantic; actual SA relationship provided via sa_relationship on Field
+    tasks: List["Task"] = Field(
+        default_factory=list,
+        sa_relationship=sa_relationship(
+            "Task",
+            back_populates="assignee",
+            cascade="all, delete-orphan",
+            foreign_keys="[Task.assignee_id]",
+        ),
+    )
 
 
 class TeamMemberCreate(TeamMemberBase):
@@ -62,8 +67,24 @@ class Board(BoardBase, table=True):
     __tablename__ = "board"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints = sa_relationship("Sprint", back_populates="board")
-    tasks = sa_relationship("Task", back_populates="board")
+    sprints: List["Sprint"] = Field(
+        default_factory=list,
+        sa_relationship=sa_relationship(
+            "Sprint",
+            back_populates="board",
+            cascade="all, delete-orphan",
+            foreign_keys="[Sprint.board_id]",
+        ),
+    )
+    tasks: List["Task"] = Field(
+        default_factory=list,
+        sa_relationship=sa_relationship(
+            "Task",
+            back_populates="board",
+            cascade="all, delete-orphan",
+            foreign_keys="[Task.board_id]",
+        ),
+    )
 
 
 class BoardCreate(BoardBase):
@@ -90,8 +111,23 @@ class Sprint(SprintBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
-    board = sa_relationship("Board", back_populates="sprints")
-    tasks = sa_relationship("Task", back_populates="sprint")
+    board: "Board" = Field(
+        default=None,
+        sa_relationship=sa_relationship(
+            "Board",
+            back_populates="sprints",
+            foreign_keys="[Sprint.board_id]",
+        ),
+    )
+    tasks: List["Task"] = Field(
+        default_factory=list,
+        sa_relationship=sa_relationship(
+            "Task",
+            back_populates="sprint",
+            cascade="all, delete-orphan",
+            foreign_keys="[Task.sprint_id]",
+        ),
+    )
 
 
 class SprintCreate(SprintBase):
@@ -132,9 +168,30 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee = sa_relationship("TeamMember", back_populates="tasks")
-    sprint = sa_relationship("Sprint", back_populates="tasks")
-    board = sa_relationship("Board", back_populates="tasks")
+    assignee: Optional["TeamMember"] = Field(
+        default=None,
+        sa_relationship=sa_relationship(
+            "TeamMember",
+            back_populates="tasks",
+            foreign_keys="[Task.assignee_id]",
+        ),
+    )
+    sprint: Optional["Sprint"] = Field(
+        default=None,
+        sa_relationship=sa_relationship(
+            "Sprint",
+            back_populates="tasks",
+            foreign_keys="[Task.sprint_id]",
+        ),
+    )
+    board: "Board" = Field(
+        default=None,
+        sa_relationship=sa_relationship(
+            "Board",
+            back_populates="tasks",
+            foreign_keys="[Task.board_id]",
+        ),
+    )
 
 
 class TaskCreate(TaskBase):
