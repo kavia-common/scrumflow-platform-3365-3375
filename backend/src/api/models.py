@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
 
@@ -27,10 +27,12 @@ class TeamMemberBase(SQLModel):
 
 
 class TeamMember(TeamMemberBase, table=True):
+    # Explicit __tablename__ ensures FK naming consistency across SQLAlchemy 2.x
+    __tablename__ = "teammember"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Relationship: one TeamMember has many Tasks
-    # Use typing.List[...] to avoid SQLAlchemy interpreting the annotation literal as a string generic.
-    tasks: List["Task"] = Relationship(back_populates="assignee")
+    # SQLAlchemy 2.x compatible relationship typing: use builtin list[...] annotations
+    tasks: list["Task"] = Relationship(back_populates="assignee")
 
 
 class TeamMemberCreate(TeamMemberBase):
@@ -51,9 +53,11 @@ class BoardBase(SQLModel):
 
 
 class Board(BoardBase, table=True):
+    __tablename__ = "board"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: List["Sprint"] = Relationship(back_populates="board")
-    tasks: List["Task"] = Relationship(back_populates="board")
+    sprints: list["Sprint"] = Relationship(back_populates="board")
+    tasks: list["Task"] = Relationship(back_populates="board")
 
 
 class BoardCreate(BoardBase):
@@ -76,10 +80,12 @@ class SprintBase(SQLModel):
 
 
 class Sprint(SprintBase, table=True):
+    __tablename__ = "sprint"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
-    board: Optional[Board] = Relationship(back_populates="sprints")
-    tasks: List["Task"] = Relationship(back_populates="sprint")
+    board: Optional["Board"] = Relationship(back_populates="sprints")
+    tasks: list["Task"] = Relationship(back_populates="sprint")
 
 
 class SprintCreate(SprintBase):
@@ -108,6 +114,8 @@ class TaskBase(SQLModel):
 
 
 class Task(TaskBase, table=True):
+    __tablename__ = "task"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     assignee_id: Optional[int] = Field(default=None, foreign_key="teammember.id", index=True)
     sprint_id: Optional[int] = Field(default=None, foreign_key="sprint.id", index=True)
@@ -118,9 +126,9 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee: Optional[TeamMember] = Relationship(back_populates="tasks")
-    sprint: Optional[Sprint] = Relationship(back_populates="tasks")
-    board: Optional[Board] = Relationship(back_populates="tasks")
+    assignee: Optional["TeamMember"] = Relationship(back_populates="tasks")
+    sprint: Optional["Sprint"] = Relationship(back_populates="tasks")
+    board: Optional["Board"] = Relationship(back_populates="tasks")
 
 
 class TaskCreate(TaskBase):
