@@ -9,6 +9,8 @@ from sqlmodel import Session
 from ..dependencies import get_session
 from ..models import TaskCreate, TaskRead, TaskUpdate, TaskStatus
 from ..repositories import TaskRepository
+from ..services.jira_service import JiraService, map_task_status_to_jira
+from ..config import get_jira_config
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -100,4 +102,18 @@ def move_task(task_id: int, payload: MoveTaskPayload, session: Session = Depends
     t = repo.move(task_id, sprint_id=payload.sprint_id, board_id=payload.board_id, status=payload.status)
     if not t:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    # If linked to Jira and status changed, attempt to transition Jira issue.
+    try:
+        if payload.status is not None and getattr(t, "jira_issue_key", None):
+            cfg = get_jira_config()
+            if cfg.enabled:
+                jira = JiraService()
+                jira_status = map_task_status_to_jira(payload.status.value if hasattr(payload.status, "value") else str(payload.status))
+                jira.transition_issue(issue_key=t.jira_issue_key, status_name=jira_status)  # best-effort
+    except Exception:
+        # Best-effort only: log and continue
+        import logging
+        logging.getLogger(__name__).exception("Failed to transition Jira issue for task_id=%s", task_id)
+
     return t

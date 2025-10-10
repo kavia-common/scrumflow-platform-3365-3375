@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .dependencies import init_db_and_seed
 from .routers import boards, sprints, tasks, teams, progress
+from .routers import integrations_jira
 
 # OpenAPI tag definitions for grouping endpoints in docs
 openapi_tags = [
@@ -14,6 +15,7 @@ openapi_tags = [
     {"name": "Team", "description": "Manage team members"},
     {"name": "Progress", "description": "Progress and metrics"},
     {"name": "Health", "description": "Service health checks"},
+    {"name": "Integrations - Jira", "description": "Jira integration via MCP client"},
 ]
 
 # PUBLIC_INTERFACE
@@ -68,3 +70,4 @@ app.include_router(sprints.router)
 app.include_router(tasks.router)
 app.include_router(teams.router)
 app.include_router(progress.router)
+app.include_router(integrations_jira.router)

@@ -111,6 +111,8 @@ class Task(TaskBase, table=True):
     assignee_id: Optional[int] = Field(default=None, foreign_key="teammember.id", index=True)
     sprint_id: Optional[int] = Field(default=None, foreign_key="sprint.id", index=True)
     board_id: int = Field(foreign_key="board.id", index=True)
+    # Optional linkage to a Jira issue key (e.g., PROJ-123). Nullable for backward compatibility.
+    jira_issue_key: Optional[str] = Field(default=None, description="Linked Jira issue key")
 
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -131,6 +133,7 @@ class TaskRead(TaskBase):
     board_id: int
     sprint_id: Optional[int] = None
     assignee_id: Optional[int] = None
+    jira_issue_key: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -144,6 +147,7 @@ class TaskUpdate(SQLModel):
     assignee_id: Optional[int] = None
     sprint_id: Optional[int] = None
     board_id: Optional[int] = None
+    jira_issue_key: Optional[str] = None
 
 
 # Utility for updated_at timestamps via SQLModel events would be SQLAlchemy-level;
