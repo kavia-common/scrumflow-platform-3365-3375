@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List
 
 from sqlmodel import Field, SQLModel, Relationship
 
@@ -29,7 +29,8 @@ class TeamMemberBase(SQLModel):
 class TeamMember(TeamMemberBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     # Relationship: one TeamMember has many Tasks
-    tasks: list["Task"] = Relationship(back_populates="assignee")
+    # Use typing.List[...] to avoid SQLAlchemy interpreting the annotation literal as a string generic.
+    tasks: List["Task"] = Relationship(back_populates="assignee")
 
 
 class TeamMemberCreate(TeamMemberBase):
@@ -51,8 +52,8 @@ class BoardBase(SQLModel):
 
 class Board(BoardBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: list["Sprint"] = Relationship(back_populates="board")
-    tasks: list["Task"] = Relationship(back_populates="board")
+    sprints: List["Sprint"] = Relationship(back_populates="board")
+    tasks: List["Task"] = Relationship(back_populates="board")
 
 
 class BoardCreate(BoardBase):
@@ -78,7 +79,7 @@ class Sprint(SprintBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
     board: Optional[Board] = Relationship(back_populates="sprints")
-    tasks: list["Task"] = Relationship(back_populates="sprint")
+    tasks: List["Task"] = Relationship(back_populates="sprint")
 
 
 class SprintCreate(SprintBase):
