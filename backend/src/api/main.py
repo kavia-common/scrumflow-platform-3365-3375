@@ -4,6 +4,11 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.routes.auth import router as auth_router
+from src.api.routes.teams import router as teams_router
+from src.api.routes.boards import router as boards_router
+from src.api.routes.sprints import router as sprints_router
+from src.api.routes.tasks import router as tasks_router
 
 from src.core.config import settings
 from src.db.session import init_db
@@ -39,6 +44,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(auth_router)
+app.include_router(teams_router)
+app.include_router(boards_router)
+app.include_router(sprints_router)
+app.include_router(tasks_router)
 
 @app.get("/", tags=["Health"], summary="Health Check", description="Returns service health status.")
 def health_check():
