@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
 
@@ -28,7 +28,8 @@ class TeamMemberBase(SQLModel):
 
 class TeamMember(TeamMemberBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    tasks: List["Task"] = Relationship(back_populates="assignee")
+    # Relationship: one TeamMember has many Tasks
+    tasks: list["Task"] = Relationship(back_populates="assignee")
 
 
 class TeamMemberCreate(TeamMemberBase):
@@ -50,8 +51,8 @@ class BoardBase(SQLModel):
 
 class Board(BoardBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: List["Sprint"] = Relationship(back_populates="board")
-    tasks: List["Task"] = Relationship(back_populates="board")
+    sprints: list["Sprint"] = Relationship(back_populates="board")
+    tasks: list["Task"] = Relationship(back_populates="board")
 
 
 class BoardCreate(BoardBase):
@@ -77,7 +78,7 @@ class Sprint(SprintBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
     board: Optional[Board] = Relationship(back_populates="sprints")
-    tasks: List["Task"] = Relationship(back_populates="sprint")
+    tasks: list["Task"] = Relationship(back_populates="sprint")
 
 
 class SprintCreate(SprintBase):
