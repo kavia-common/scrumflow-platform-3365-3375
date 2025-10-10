@@ -31,6 +31,8 @@ Required environment variables (ensure all are set in backend/.env):
 - MCP_CLIENT_CMD
 
 1) Create backend/.env (use .env.example as a template) with valid Jira Cloud credentials and MCP client command.
+   You can start by copying:
+   cp backend/.env.example backend/.env
 2) Start the API with uvicorn:
    uvicorn src.api.main:app --reload --host 0.0.0.0 --port 3001
 3) Create a Board and a Task, then create/link Jira issue, and finally move the task to trigger Jira transition.

@@ -12,6 +12,29 @@ from ..config import get_jira_config
 router = APIRouter(prefix="/integrations/jira", tags=["Integrations - Jira"])
 
 
+@router.get(
+    "/readiness",
+    summary="Jira integration readiness",
+    description="Returns whether Jira MCP integration is enabled based on environment configuration.",
+)
+def jira_readiness():
+    cfg = get_jira_config()
+    return {
+        "enabled": bool(cfg.enabled),
+        "missing": [
+            name
+            for name, value in [
+                ("JIRA_BASE_URL", cfg.base_url),
+                ("JIRA_EMAIL", cfg.email),
+                ("JIRA_API_TOKEN", cfg.api_token),
+                ("JIRA_PROJECT_KEY", cfg.project_key),
+                ("MCP_CLIENT_CMD", cfg.mcp_client_cmd),
+            ]
+            if not value
+        ],
+    }
+
+
 class CreateJiraIssuePayload(BaseModel):
     task_id: int = Field(..., description="Task id to link and create a corresponding Jira issue")
     summary: str = Field(..., description="Jira issue summary")
