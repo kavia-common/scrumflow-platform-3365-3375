@@ -5,7 +5,6 @@ from datetime import datetime, date
 from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy.orm import relationship as sa_relationship
 
 
 class TaskStatus(str, enum.Enum):
@@ -30,7 +29,7 @@ class TeamMemberBase(SQLModel):
 class TeamMember(TeamMemberBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     # Relationship: one TeamMember has many Tasks
-    tasks: list["Task"] = Relationship(sa_relationship(back_populates="assignee"))
+    tasks: list["Task"] = Relationship(back_populates="assignee")
 
 
 class TeamMemberCreate(TeamMemberBase):
@@ -52,8 +51,8 @@ class BoardBase(SQLModel):
 
 class Board(BoardBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: list["Sprint"] = Relationship(sa_relationship(back_populates="board"))
-    tasks: list["Task"] = Relationship(sa_relationship(back_populates="board"))
+    sprints: list["Sprint"] = Relationship(back_populates="board")
+    tasks: list["Task"] = Relationship(back_populates="board")
 
 
 class BoardCreate(BoardBase):
@@ -78,8 +77,8 @@ class SprintBase(SQLModel):
 class Sprint(SprintBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
-    board: Optional[Board] = Relationship(sa_relationship(back_populates="sprints"))
-    tasks: list["Task"] = Relationship(sa_relationship(back_populates="sprint"))
+    board: Optional[Board] = Relationship(back_populates="sprints")
+    tasks: list["Task"] = Relationship(back_populates="sprint")
 
 
 class SprintCreate(SprintBase):
@@ -118,9 +117,9 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee: Optional[TeamMember] = Relationship(sa_relationship(back_populates="tasks"))
-    sprint: Optional[Sprint] = Relationship(sa_relationship(back_populates="tasks"))
-    board: Optional[Board] = Relationship(sa_relationship(back_populates="tasks"))
+    assignee: Optional[TeamMember] = Relationship(back_populates="tasks")
+    sprint: Optional[Sprint] = Relationship(back_populates="tasks")
+    board: Optional[Board] = Relationship(back_populates="tasks")
 
 
 class TaskCreate(TaskBase):
