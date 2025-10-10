@@ -2,10 +2,20 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
 
 from .dependencies import init_db_and_seed
 from .routers import boards, sprints, tasks, teams, progress
 from .routers import integrations_jira
+
+# Configure basic logging to ensure MCP subprocess issues are visible in console
+# LOG_LEVEL can be customized via env, defaults to INFO.
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 # OpenAPI tag definitions for grouping endpoints in docs
 openapi_tags = [

@@ -23,31 +23,55 @@ FastAPI backend for the Scrum Mind application.
 
 ### Quickstart: Jira MCP end-to-end check
 
-1. Create backend/.env with valid Jira Cloud credentials and MCP client command as shown above.
-2. Start the API with uvicorn as shown.
-3. Create a Task:
-   - POST http://localhost:3001/tasks
-     Body:
-     {
-       "title": "Sync to Jira",
-       "board_id": 1,
-       "status": "todo"
-     }
-4. Create and link a Jira issue:
-   - POST http://localhost:3001/integrations/jira/issues
-     Body:
-     {
-       "task_id": <TASK_ID_FROM_STEP_3>,
-       "summary": "Sync to Jira",
-       "description": "Issue created via MCP from Scrum Mind",
-       "issue_type": "Task"
-     }
-   The response includes jira_issue_key. Verify the task now has jira_issue_key via GET /tasks/{id}.
-5. Transition via hook by moving the task:
-   - POST http://localhost:3001/tasks/<TASK_ID>/move
-     Body:
-     { "status": "in_progress" }
-   If the task has jira_issue_key and Jira MCP is enabled, the backend will attempt to transition the linked Jira issue to "In Progress".
+Required environment variables (ensure all are set in backend/.env):
+- JIRA_BASE_URL
+- JIRA_EMAIL
+- JIRA_API_TOKEN
+- JIRA_PROJECT_KEY
+- MCP_CLIENT_CMD
+
+1) Create backend/.env (use .env.example as a template) with valid Jira Cloud credentials and MCP client command.
+2) Start the API with uvicorn:
+   uvicorn src.api.main:app --reload --host 0.0.0.0 --port 3001
+3) Create a Board and a Task, then create/link Jira issue, and finally move the task to trigger Jira transition.
+
+Example script (bash + curl):
+
+# Create a board (if needed)
+BOARD_ID=$(curl -s -X POST "http://localhost:3001/boards" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Example Project"}' | jq -r '.id')
+
+# Create a task
+TASK=$(curl -s -X POST "http://localhost:3001/tasks" \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Sync to Jira\",\"board_id\":${BOARD_ID},\"status\":\"todo\"}")
+TASK_ID=$(echo "$TASK" | jq -r '.id')
+
+# Create & link Jira issue
+LINK=$(curl -s -X POST "http://localhost:3001/integrations/jira/issues" \
+  -H "Content-Type: application/json" \
+  -d "{\"task_id\":${TASK_ID},\"summary\":\"Sync to Jira\",\"description\":\"Issue created via MCP from Scrum Mind\",\"issue_type\":\"Task\"}")
+echo "Link Response: $LINK"
+ISSUE_KEY=$(echo "$LINK" | jq -r '.jira_issue_key')
+
+# Verify jira_issue_key on the task
+curl -s "http://localhost:3001/tasks/${TASK_ID}" | jq
+
+# Trigger transition by moving the task to in_progress
+curl -s -X POST "http://localhost:3001/tasks/${TASK_ID}/move" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"in_progress"}' | jq
+
+# Or transition directly via integrations API
+curl -s -X POST "http://localhost:3001/integrations/jira/issues/${ISSUE_KEY}/transition" \
+  -H "Content-Type: application/json" \
+  -d '{"status_name":"In Progress"}' | jq
+
+Troubleshooting:
+- If you see 503 "Jira integration not configured", re-check all env vars listed above.
+- If transitions fail silently, set LOG_LEVEL=DEBUG in .env, restart, and inspect logs for MCP subprocess stderr/stdout decoding issues.
+- Ensure MCP_CLIENT_CMD points to an installed client in PATH that supports the tools: createIssue, transitionIssue.
 
 ## Environment configuration
 
