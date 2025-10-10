@@ -36,6 +36,7 @@ app = FastAPI(
 )
 
 # Configure CORS using environment variable
+# Note: For local preview, CORS_ORIGINS in .env defaults to http://localhost:3000
 cors_origins: List[str] = settings.cors_origins
 app.add_middleware(
     CORSMiddleware,

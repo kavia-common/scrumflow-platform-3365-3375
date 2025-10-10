@@ -6,7 +6,15 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Application configuration loaded from environment variables."""
+    """Application configuration loaded from environment variables.
+
+    Env keys:
+    - DB_URL (default sqlite:///./scrum_mind.db)
+    - JWT_SECRET (default CHANGE_ME; override in production)
+    - JWT_EXPIRES_MIN (default 60)
+    - JWT_ALGORITHM (default HS256)
+    - CORS_ORIGINS (comma-separated; default '*'. Local default set via .env to http://localhost:3000)
+    """
 
     # Database
     db_url: str = Field(default="sqlite:///./scrum_mind.db", alias="DB_URL", description="SQLAlchemy-compatible database URL")
