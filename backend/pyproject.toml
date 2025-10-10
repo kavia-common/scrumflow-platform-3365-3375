@@ -1,0 +1,33 @@
+[tool.ruff]
+target-version = "py39"
+extend-select = ["E", "F", "I"]  # pycodestyle, pyflakes, isort
+line-length = 100
+indent-width = 4
+fix = true
+unsafe-fixes = false
+exclude = [
+  ".venv",
+  "venv",
+  "build",
+  "dist",
+  "__pycache__",
+  "interfaces"
+]
+
+[tool.ruff.lint]
+ignore = [
+  "E203",  # whitespace before ':', compatible with black
+  "E266",  # too many leading '#' for block comment
+  "E501"   # line length handled by formatter
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+skip-string-normalization = true
