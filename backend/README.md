@@ -2,50 +2,41 @@
 
 FastAPI backend for the Scrum Mind application.
 
-## Environment configuration
+Quickstart
+- Prereqs: Python 3.11+, pip
+- Install:
+  - pip install -r requirements.txt
+- Environment (.env in backend/):
+  - DATABASE_URL=sqlite:///./scrum_mind.db
+  - SEED=true   # optional; seeds sample data on startup
+- Start (dev, port 3001):
+  - uvicorn src.api.main:app --reload --host 0.0.0.0 --port 3001
+- Docs:
+  - Swagger: http://localhost:3001/docs
+  - OpenAPI: http://localhost:3001/openapi.json
 
-This backend loads configuration from a `.env` file (via python-dotenv). The following variables are supported:
+Environment configuration
+- DATABASE_URL (required): SQLAlchemy/SQLModel DSN. Defaults to sqlite:///./scrum_mind.db if not set.
+- SEED (optional): 1/true/yes/on enables example data seeding when DB is empty.
 
-- `DATABASE_URL` (required): SQLAlchemy/SQLModel database connection string.
-  - Default (if not set): `sqlite:///./scrum_mind.db` (SQLite file in the backend working directory).
-- `SEED` (optional): Enables seeding of development/sample data on startup.
-  - Truthy values: `1`, `true`, `yes`, `on` (case-insensitive). Any other value is treated as false.
-  - Default (if not set): `false`.
+Database initialization and seeding
+- On startup, `init_db_and_seed()` creates tables and, if SEED is true and no data exists, inserts:
+  - One example board, one active sprint, example team members, and a few tasks with various statuses and story points.
 
-Example `.env` (already provided in this repo under `backend/.env`):
+CORS
+- Configured to allow http://localhost:3000 (frontend dev origin).
 
-```
-DATABASE_URL=sqlite:///./scrum_mind.db
-SEED=true
-```
+Smoke-test checklist (end-to-end)
+- Health: GET /
+- Boards: GET /boards; POST /boards
+- Sprints: GET /sprints?board_id=...; POST /sprints
+- Tasks:
+  - GET /tasks?board_id=...
+  - POST /tasks
+  - PUT /tasks/{id}
+  - POST /tasks/{id}/move (UI "review" -> backend "in_progress")
+- Team: GET /team; POST /team
+- Progress: GET /progress/summary?board_id=... (check totals and velocity)
 
-## Database initialization and seeding
-
-On application startup, the app calls `init_db_and_seed()` (see `src/api/dependencies.py`):
-
-- Creates all tables defined in SQLModel metadata if they do not exist.
-- If `SEED` is enabled, inserts example data (a sample board, sprint, team members, and tasks) unless data already exists.
-
-This ensures the API is immediately usable in development environments.
-
-## Running locally
-
-1. Ensure Python dependencies are installed:
-   ```
-   pip install -r requirements.txt
-   ```
-2. Verify or adjust the `.env` file in `backend/`.
-3. Start the server:
-   ```
-   uvicorn src.api.main:app --reload --host 0.0.0.0 --port 3001
-   ```
-4. Open API docs:
-   - Swagger UI: http://localhost:3001/docs
-   - OpenAPI JSON: http://localhost:3001/openapi.json
-
-## Regenerating OpenAPI spec
-
-To export the current OpenAPI schema to `interfaces/openapi.json` for consumers:
-```
-python -m src.api.generate_openapi
-```
+Regenerating OpenAPI spec
+- python -m src.api.generate_openapi -> backend/interfaces/openapi.json
