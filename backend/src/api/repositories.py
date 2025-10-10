@@ -182,7 +182,14 @@ class TaskRepository:
         return True
 
     # PUBLIC_INTERFACE
-    def move(self, task_id: int, *, sprint_id: Optional[int], board_id: Optional[int], status: Optional[TaskStatus]) -> Optional[Task]:
+    def move(
+        self,
+        task_id: int,
+        *,
+        sprint_id: Optional[int],
+        board_id: Optional[int],
+        status: Optional[TaskStatus],
+    ) -> Optional[Task]:
         """Move task across sprint/board/status."""
         t = self.get(task_id)
         if not t:

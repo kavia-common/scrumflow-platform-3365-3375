@@ -10,6 +10,7 @@ can consume the latest API contract.
 
 from src.api.main import app
 
+
 def main() -> None:
     # Generate OpenAPI schema from the running FastAPI app definition
     openapi_schema = app.openapi()

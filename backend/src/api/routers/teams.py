@@ -43,7 +43,10 @@ def get_member(member_id: int, session: Session = Depends(get_session)):
     repo = TeamRepository(session)
     m = repo.get(member_id)
     if not m:
-        raise HTTPException(status_code=404, detail="Team member not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Team member not found",
+        )
     return m
 
 

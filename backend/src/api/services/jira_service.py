@@ -14,10 +14,11 @@ class JiraService:
     """
     Service wrapper that talks to an MCP client process exposing Jira tools.
 
-    The MCP client command is provided via env (MCP_CLIENT_CMD) and is executed per call
-    with a JSON payload describing the tool to run and its arguments.
+    The MCP client command is provided via env (MCP_CLIENT_CMD) and is executed per
+    call with a JSON payload describing the tool to run and its arguments.
 
-    All calls are resilient: if configuration is missing or execution fails, we log and return None/False.
+    All calls are resilient: if configuration is missing or execution fails, we log
+    and return None/False.
     """
 
     def __init__(self) -> None:
@@ -54,7 +55,10 @@ class JiraService:
         try:
             cmd = self.cfg.mcp_client_cmd or ""
             if not cmd:
-                logger.warning("MCP client command not configured; skipping Jira call: %s", tool_name)
+                logger.warning(
+                    "MCP client command not configured; skipping Jira call: %s",
+                    tool_name,
+                )
                 return None
 
             # Use shell to support multi-word commands (e.g., "mcp-jira --stdio")
@@ -83,7 +87,10 @@ class JiraService:
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
-                logger.exception("Failed to decode MCP client JSON output: %s", raw[:1000])
+                logger.exception(
+                    "Failed to decode MCP client JSON output: %s",
+                    raw[:1000],
+                )
                 return None
 
             return data if isinstance(data, dict) else None
@@ -93,8 +100,14 @@ class JiraService:
             return None
 
     # PUBLIC_INTERFACE
-    def create_issue(self, *, project_key: str, summary: str, description: str,
-                     issue_type: str = "Task") -> Optional[str]:
+    def create_issue(
+        self,
+        *,
+        project_key: str,
+        summary: str,
+        description: str,
+        issue_type: str = "Task",
+    ) -> Optional[str]:
         """
         Create a Jira issue via MCP.
 
@@ -105,7 +118,8 @@ class JiraService:
             issue_type (str): Jira issue type (default "Task").
 
         Returns:
-            Optional[str]: Issue key (e.g., "PROJ-123") if successful, otherwise None.
+            Optional[str]: Issue key (e.g., "PROJ-123") if successful,
+            otherwise None.
         """
         resp = self._run_tool(
             "createIssue",
@@ -120,7 +134,10 @@ class JiraService:
             return None
         if resp.get("success") and isinstance(resp.get("data"), dict):
             return resp["data"].get("key")
-        logger.warning("createIssue did not succeed; resp=%s", resp)
+        logger.warning(
+            "createIssue did not succeed; resp=%s",
+            resp,
+        )
         return None
 
     # PUBLIC_INTERFACE
@@ -146,7 +163,12 @@ class JiraService:
             return False
         ok = bool(resp.get("success"))
         if not ok:
-            logger.warning("transitionIssue failed for %s -> %s; resp=%s", issue_key, status_name, resp)
+            logger.warning(
+                "transitionIssue failed for %s -> %s; resp=%s",
+                issue_key,
+                status_name,
+                resp,
+            )
         return ok
 
     # PUBLIC_INTERFACE

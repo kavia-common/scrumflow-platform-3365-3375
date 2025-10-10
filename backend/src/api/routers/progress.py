@@ -16,7 +16,11 @@ router = APIRouter(prefix="/progress", tags=["Progress"])
     "/summary",
     response_model=ProgressSummary,
     summary="Progress summary",
-    description="Return aggregate counts of tasks by status and a velocity proxy (sum of story points for done tasks). Allows optional filtering by board_id or sprint_id.",
+    description=(
+        "Return aggregate counts of tasks by status and a velocity proxy "
+        "(sum of story points for done tasks). Allows optional filtering by "
+        "board_id or sprint_id."
+    ),
 )
 def progress_summary(
     board_id: Optional[int] = Query(default=None, description="Filter tasks by board"),

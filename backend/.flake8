@@ -1,7 +1,21 @@
 [flake8]
-exclude = .git,__pycache__,build,dist,venv
-select = E9,F
-max-line-length = 120
-per-file-ignores =
-    __init__.py:F401
-max-complexity = 18
+# Exclude virtual environments and non-source directories to prevent linting third-party packages
+exclude =
+    .venv,
+    venv,
+    env,
+    .git,
+    __pycache__,
+    .mypy_cache,
+    .pytest_cache,
+    build,
+    dist,
+    node_modules,
+    .eggs,
+    *.egg-info
+
+# Adjust line length if needed for this project
+max-line-length = 100
+
+# Ignore codes that commonly conflict with Black/PEP8 nuances
+ignore = E203, W503

@@ -29,7 +29,10 @@ class ProgressSummary(BaseModel):
     in_progress: int = Field(..., description="Tasks in progress")
     done: int = Field(..., description="Tasks done")
     blocked: int = Field(..., description="Tasks blocked")
-    velocity: Optional[int] = Field(None, description="Sum of story points of 'done' tasks (proxy velocity)")
+    velocity: Optional[int] = Field(
+        None,
+        description="Sum of story points of 'done' tasks (proxy velocity)",
+    )
 
 
 # Re-export of main models' Pydantic models for API reference

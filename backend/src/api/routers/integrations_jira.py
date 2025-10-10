@@ -9,14 +9,20 @@ from ..repositories import TaskRepository
 from ..services.jira_service import JiraService
 from ..config import get_jira_config
 
-router = APIRouter(prefix="/integrations/jira", tags=["Integrations - Jira"])
+router = APIRouter(
+    prefix="/integrations/jira",
+    tags=["Integrations - Jira"],
+)
 
 
 # PUBLIC_INTERFACE
 @router.get(
     "/readiness",
     summary="Jira integration readiness",
-    description="Returns whether Jira MCP integration is enabled based on environment configuration.",
+    description=(
+        "Returns whether Jira MCP integration is enabled based on "
+        "environment configuration."
+    ),
 )
 def jira_readiness():
     """
@@ -46,21 +52,30 @@ def jira_readiness():
 
 
 class CreateJiraIssuePayload(BaseModel):
-    task_id: int = Field(..., description="Task id to link and create a corresponding Jira issue")
+    task_id: int = Field(
+        ...,
+        description="Task id to link and create a corresponding Jira issue",
+    )
     summary: str = Field(..., description="Jira issue summary")
     description: str = Field("", description="Jira issue description")
     issue_type: str = Field("Task", description="Jira issue type")
 
 
 class TransitionIssuePayload(BaseModel):
-    status_name: str = Field(..., description="Target Jira status name (e.g., 'In Progress', 'Done')")
+    status_name: str = Field(
+        ...,
+        description="Target Jira status name (e.g., 'In Progress', 'Done')",
+    )
 
 
 # PUBLIC_INTERFACE
 @router.post(
     "/issues",
     summary="Create and link a Jira issue for a task",
-    description="Creates a Jira issue via MCP and persists the returned issue key to the task's jira_issue_key field.",
+    description=(
+        "Creates a Jira issue via MCP and persists the returned issue key to "
+        "the task's jira_issue_key field."
+    ),
 )
 def create_linked_issue(payload: CreateJiraIssuePayload, session: Session = Depends(get_session)):
     """

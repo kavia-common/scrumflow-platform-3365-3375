@@ -24,7 +24,10 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 def list_tasks(
     board_id: Optional[int] = Query(default=None, description="Filter by board id"),
     sprint_id: Optional[int] = Query(default=None, description="Filter by sprint id"),
-    status: Optional[TaskStatus] = Query(default=None, description="Filter by status"),
+    status: Optional[TaskStatus] = Query(
+        default=None,
+        description="Filter by status",
+    ),
     session: Session = Depends(get_session),
 ):
     repo = TaskRepository(session)
@@ -95,11 +98,18 @@ class MoveTaskPayload(BaseModel):
     "/{task_id}/move",
     response_model=TaskRead,
     summary="Move task",
-    description="Move task across sprint/board/status in a single operation.",
+    description=(
+        "Move task across sprint/board/status in a single operation."
+    ),
 )
 def move_task(task_id: int, payload: MoveTaskPayload, session: Session = Depends(get_session)):
     repo = TaskRepository(session)
-    t = repo.move(task_id, sprint_id=payload.sprint_id, board_id=payload.board_id, status=payload.status)
+    t = repo.move(
+        task_id,
+        sprint_id=payload.sprint_id,
+        board_id=payload.board_id,
+        status=payload.status,
+    )
     if not t:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -109,11 +119,22 @@ def move_task(task_id: int, payload: MoveTaskPayload, session: Session = Depends
             cfg = get_jira_config()
             if cfg.enabled:
                 jira = JiraService()
-                jira_status = map_task_status_to_jira(payload.status.value if hasattr(payload.status, "value") else str(payload.status))
-                jira.transition_issue(issue_key=t.jira_issue_key, status_name=jira_status)  # best-effort
+                jira_status = map_task_status_to_jira(
+                    payload.status.value
+                    if hasattr(payload.status, "value")
+                    else str(payload.status)
+                )
+                # best-effort
+                jira.transition_issue(
+                    issue_key=t.jira_issue_key,
+                    status_name=jira_status,
+                )
     except Exception:
         # Best-effort only: log and continue
         import logging
-        logging.getLogger(__name__).exception("Failed to transition Jira issue for task_id=%s", task_id)
+        logging.getLogger(__name__).exception(
+            "Failed to transition Jira issue for task_id=%s",
+            task_id,
+        )
 
     return t
