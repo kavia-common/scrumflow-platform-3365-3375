@@ -4,7 +4,8 @@ import enum
 from datetime import datetime, date
 from typing import Optional
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, SQLModel
+from sqlalchemy.orm import Mapped, relationship
 
 
 class TaskStatus(str, enum.Enum):
@@ -30,13 +31,10 @@ class TeamMember(TeamMemberBase, table=True):
     __tablename__ = "teammember"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Use built-in list[...] typing (no typing.List / quoted generic) to avoid SA registry parsing "List['Task']"
-    tasks: list["Task"] = Relationship(
+    # SQLAlchemy 2.x typed relationship
+    tasks: Mapped[list["Task"]] = relationship(
         back_populates="assignee",
-        # do not specify foreign_keys here; rely on FK columns defined on Task
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-        },
+        cascade="all, delete-orphan",
     )
 
 
@@ -61,17 +59,13 @@ class Board(BoardBase, table=True):
     __tablename__ = "board"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: list["Sprint"] = Relationship(
+    sprints: Mapped[list["Sprint"]] = relationship(
         back_populates="board",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-        },
+        cascade="all, delete-orphan",
     )
-    tasks: list["Task"] = Relationship(
+    tasks: Mapped[list["Task"]] = relationship(
         back_populates="board",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-        },
+        cascade="all, delete-orphan",
     )
 
 
@@ -100,14 +94,12 @@ class Sprint(SprintBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
 
-    board: "Board" = Relationship(
+    board: Mapped["Board"] = relationship(
         back_populates="sprints",
     )
-    tasks: list["Task"] = Relationship(
+    tasks: Mapped[list["Task"]] = relationship(
         back_populates="sprint",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan",
-        },
+        cascade="all, delete-orphan",
     )
 
 
@@ -148,13 +140,13 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee: Optional["TeamMember"] = Relationship(
+    assignee: Mapped[Optional["TeamMember"]] = relationship(
         back_populates="tasks",
     )
-    sprint: Optional["Sprint"] = Relationship(
+    sprint: Mapped[Optional["Sprint"]] = relationship(
         back_populates="tasks",
     )
-    board: "Board" = Relationship(
+    board: Mapped["Board"] = relationship(
         back_populates="tasks",
     )
 
