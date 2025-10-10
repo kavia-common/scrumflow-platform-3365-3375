@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, List
 
-from sqlmodel import Field, SQLModel
-from sqlalchemy.orm import Mapped, relationship
+from sqlmodel import Field, SQLModel, Relationship
 
 
 class TaskStatus(str, enum.Enum):
@@ -31,10 +30,13 @@ class TeamMember(TeamMemberBase, table=True):
     __tablename__ = "teammember"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # SQLAlchemy 2.x typed relationship
-    tasks: Mapped[list["Task"]] = relationship(
+    # SQLModel Relationship (list of tasks assigned to this member)
+    tasks: List["Task"] = Relationship(
         back_populates="assignee",
-        cascade="all, delete-orphan",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Task.assignee_id]",
+        },
     )
 
 
@@ -56,16 +58,17 @@ class BoardBase(SQLModel):
 
 
 class Board(BoardBase, table=True):
+    """Project board model containing sprints and tasks."""
     __tablename__ = "board"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: Mapped[list["Sprint"]] = relationship(
+    sprints: List["Sprint"] = Relationship(
         back_populates="board",
-        cascade="all, delete-orphan",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
-    tasks: Mapped[list["Task"]] = relationship(
+    tasks: List["Task"] = Relationship(
         back_populates="board",
-        cascade="all, delete-orphan",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
 
@@ -89,17 +92,24 @@ class SprintBase(SQLModel):
 
 
 class Sprint(SprintBase, table=True):
+    """Sprint model associated to a board and containing tasks."""
     __tablename__ = "sprint"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
 
-    board: Mapped["Board"] = relationship(
+    board: "Board" = Relationship(
         back_populates="sprints",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Sprint.board_id]",
+        },
     )
-    tasks: Mapped[list["Task"]] = relationship(
+    tasks: List["Task"] = Relationship(
         back_populates="sprint",
-        cascade="all, delete-orphan",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Task.sprint_id]",
+        },
     )
 
 
@@ -129,6 +139,7 @@ class TaskBase(SQLModel):
 
 
 class Task(TaskBase, table=True):
+    """Task model which may reference a board, sprint, assignee, and optional Jira issue key."""
     __tablename__ = "task"
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -140,14 +151,23 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee: Mapped[Optional["TeamMember"]] = relationship(
+    assignee: Optional["TeamMember"] = Relationship(
         back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.assignee_id]",
+        },
     )
-    sprint: Mapped[Optional["Sprint"]] = relationship(
+    sprint: Optional["Sprint"] = Relationship(
         back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.sprint_id]",
+        },
     )
-    board: Mapped["Board"] = relationship(
+    board: "Board" = Relationship(
         back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.board_id]",
+        },
     )
 
 
