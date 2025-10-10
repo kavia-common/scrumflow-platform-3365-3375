@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional
 
 from sqlmodel import Field, SQLModel, Relationship
-
-# Use simple string-based forward refs in type annotations for Pydantic only
 
 
 class TaskStatus(str, enum.Enum):
@@ -29,16 +27,15 @@ class TeamMemberBase(SQLModel):
 
 
 class TeamMember(TeamMemberBase, table=True):
-    # Explicit __tablename__ ensures FK naming consistency across SQLAlchemy 2.x
     __tablename__ = "teammember"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Relationship to tasks assigned to this team member
-    tasks: List["Task"] = Relationship(
+    # Use built-in list[...] typing (no typing.List / quoted generic) to avoid SA registry parsing "List['Task']"
+    tasks: list["Task"] = Relationship(
         back_populates="assignee",
+        # do not specify foreign_keys here; rely on FK columns defined on Task
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
-            "foreign_keys": "[Task.assignee_id]",
         },
     )
 
@@ -64,18 +61,16 @@ class Board(BoardBase, table=True):
     __tablename__ = "board"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: List["Sprint"] = Relationship(
+    sprints: list["Sprint"] = Relationship(
         back_populates="board",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
-            "foreign_keys": "[Sprint.board_id]",
         },
     )
-    tasks: List["Task"] = Relationship(
+    tasks: list["Task"] = Relationship(
         back_populates="board",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
-            "foreign_keys": "[Task.board_id]",
         },
     )
 
@@ -104,17 +99,14 @@ class Sprint(SprintBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
+
     board: "Board" = Relationship(
         back_populates="sprints",
-        sa_relationship_kwargs={
-            "foreign_keys": "[Sprint.board_id]",
-        },
     )
-    tasks: List["Task"] = Relationship(
+    tasks: list["Task"] = Relationship(
         back_populates="sprint",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
-            "foreign_keys": "[Task.sprint_id]",
         },
     )
 
@@ -151,7 +143,6 @@ class Task(TaskBase, table=True):
     assignee_id: Optional[int] = Field(default=None, foreign_key="teammember.id", index=True)
     sprint_id: Optional[int] = Field(default=None, foreign_key="sprint.id", index=True)
     board_id: int = Field(foreign_key="board.id", index=True)
-    # Optional linkage to a Jira issue key (e.g., PROJ-123). Nullable for backward compatibility.
     jira_issue_key: Optional[str] = Field(default=None, description="Linked Jira issue key")
 
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -159,21 +150,12 @@ class Task(TaskBase, table=True):
 
     assignee: Optional["TeamMember"] = Relationship(
         back_populates="tasks",
-        sa_relationship_kwargs={
-            "foreign_keys": "[Task.assignee_id]",
-        },
     )
     sprint: Optional["Sprint"] = Relationship(
         back_populates="tasks",
-        sa_relationship_kwargs={
-            "foreign_keys": "[Task.sprint_id]",
-        },
     )
     board: "Board" = Relationship(
         back_populates="tasks",
-        sa_relationship_kwargs={
-            "foreign_keys": "[Task.board_id]",
-        },
     )
 
 
@@ -205,5 +187,4 @@ class TaskUpdate(SQLModel):
     jira_issue_key: Optional[str] = None
 
 
-# Utility for updated_at timestamps via SQLModel events would be SQLAlchemy-level;
-# we'll manually set updated_at in repository updates.
+# Note: We manually touch updated_at in repositories on write operations.
