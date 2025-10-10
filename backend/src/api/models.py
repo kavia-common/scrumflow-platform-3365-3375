@@ -4,8 +4,7 @@ import enum
 from datetime import datetime, date
 from typing import Optional, List
 
-from sqlmodel import Field, SQLModel
-from sqlalchemy.orm import relationship as sa_relationship
+from sqlmodel import Field, SQLModel, Relationship
 
 # Use simple string-based forward refs in type annotations for Pydantic only
 
@@ -34,15 +33,13 @@ class TeamMember(TeamMemberBase, table=True):
     __tablename__ = "teammember"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # Annotated for Pydantic; actual SA relationship provided via sa_relationship on Field
-    tasks: List["Task"] = Field(
-        default_factory=list,
-        sa_relationship=sa_relationship(
-            "Task",
-            back_populates="assignee",
-            cascade="all, delete-orphan",
-            foreign_keys="[Task.assignee_id]",
-        ),
+    # Relationship to tasks assigned to this team member
+    tasks: List["Task"] = Relationship(
+        back_populates="assignee",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Task.assignee_id]",
+        },
     )
 
 
@@ -67,23 +64,19 @@ class Board(BoardBase, table=True):
     __tablename__ = "board"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    sprints: List["Sprint"] = Field(
-        default_factory=list,
-        sa_relationship=sa_relationship(
-            "Sprint",
-            back_populates="board",
-            cascade="all, delete-orphan",
-            foreign_keys="[Sprint.board_id]",
-        ),
+    sprints: List["Sprint"] = Relationship(
+        back_populates="board",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Sprint.board_id]",
+        },
     )
-    tasks: List["Task"] = Field(
-        default_factory=list,
-        sa_relationship=sa_relationship(
-            "Task",
-            back_populates="board",
-            cascade="all, delete-orphan",
-            foreign_keys="[Task.board_id]",
-        ),
+    tasks: List["Task"] = Relationship(
+        back_populates="board",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Task.board_id]",
+        },
     )
 
 
@@ -111,22 +104,18 @@ class Sprint(SprintBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     board_id: int = Field(foreign_key="board.id", index=True)
-    board: "Board" = Field(
-        default=None,
-        sa_relationship=sa_relationship(
-            "Board",
-            back_populates="sprints",
-            foreign_keys="[Sprint.board_id]",
-        ),
+    board: "Board" = Relationship(
+        back_populates="sprints",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Sprint.board_id]",
+        },
     )
-    tasks: List["Task"] = Field(
-        default_factory=list,
-        sa_relationship=sa_relationship(
-            "Task",
-            back_populates="sprint",
-            cascade="all, delete-orphan",
-            foreign_keys="[Task.sprint_id]",
-        ),
+    tasks: List["Task"] = Relationship(
+        back_populates="sprint",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "foreign_keys": "[Task.sprint_id]",
+        },
     )
 
 
@@ -168,29 +157,23 @@ class Task(TaskBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    assignee: Optional["TeamMember"] = Field(
-        default=None,
-        sa_relationship=sa_relationship(
-            "TeamMember",
-            back_populates="tasks",
-            foreign_keys="[Task.assignee_id]",
-        ),
+    assignee: Optional["TeamMember"] = Relationship(
+        back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.assignee_id]",
+        },
     )
-    sprint: Optional["Sprint"] = Field(
-        default=None,
-        sa_relationship=sa_relationship(
-            "Sprint",
-            back_populates="tasks",
-            foreign_keys="[Task.sprint_id]",
-        ),
+    sprint: Optional["Sprint"] = Relationship(
+        back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.sprint_id]",
+        },
     )
-    board: "Board" = Field(
-        default=None,
-        sa_relationship=sa_relationship(
-            "Board",
-            back_populates="tasks",
-            foreign_keys="[Task.board_id]",
-        ),
+    board: "Board" = Relationship(
+        back_populates="tasks",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Task.board_id]",
+        },
     )
 
 
